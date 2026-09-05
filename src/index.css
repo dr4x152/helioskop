@@ -72,6 +72,18 @@ body {
   color: #e8d2a0;
 }
 
+.helio-label-galaxy {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: #f3e6c4;
+}
+
+.helio-label-system {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: #d4e4ff;
+}
+
 button {
   font: inherit;
 }

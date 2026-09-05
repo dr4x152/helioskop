@@ -4,13 +4,15 @@ import { Html } from "@react-three/drei";
 import { type Group, Vector3 } from "three";
 import { BODY_BY_ID } from "../data/bodies";
 import { MOON_BY_ID } from "../data/moons";
+import { yearsFromToday } from "../lib/clock";
 import { readPosition } from "../lib/positions";
+import { sunPhase } from "../lib/solarPhase";
 import { useObservatory } from "../store/observatory";
 
 interface BodyLabelProps {
   id: string;
   name: string;
-  kind: "star" | "planet" | "dwarf" | "moon";
+  kind: "star" | "planet" | "dwarf" | "moon" | "comet" | "galaxy" | "system";
 }
 
 const _cam = new Vector3();
@@ -37,6 +39,12 @@ export function BodyLabel({ id, name, kind }: BodyLabelProps) {
       g.visible = false;
       return;
     }
+    // Olbrzym / karzeł „połyka” Merkurego i Wenus — etykiety też chowamy.
+    const swallowed = sunPhase(yearsFromToday()).swallowInner;
+    if (swallowed && (id === "mercury" || id === "venus")) {
+      g.visible = false;
+      return;
+    }
 
     camera.getWorldPosition(_cam);
     const camDist = _cam.length();
@@ -49,10 +57,17 @@ export function BodyLabel({ id, name, kind }: BodyLabelProps) {
     const radial = pos.lengthSq() > 1e-6 ? pos.clone().normalize() : new Vector3(0, 1, 0);
     const lift = kind === "star" ? r * 1.55 : r * 1.35 + 0.18;
     g.position.copy(pos).addScaledVector(radial, lift);
-    g.position.y += kind === "star" ? 0.85 : 0.22;
+    g.position.y += kind === "star" ? 0.85 : kind === "galaxy" ? 6 : kind === "system" ? 1.4 : 0.22;
 
     let show = false;
-    if (kind === "moon") {
+    if (kind === "galaxy") {
+      // Zawsze czytelne w Grupie Lokalnej — wcześniej znikały za blisko / za daleko.
+      show = toBody > 8 && toBody < 800;
+    } else if (kind === "system") {
+      show = toBody > 2 && toBody < 120;
+    } else if (kind === "comet") {
+      show = toBody > 1.2 && toBody < 80;
+    } else if (kind === "moon") {
       show = toBody < 16 && toBody > 0.45;
       if (selectedId && selectedId !== id && selectedId !== parentId) {
         show = show && toBody < 8;
@@ -70,7 +85,7 @@ export function BodyLabel({ id, name, kind }: BodyLabelProps) {
     }
 
     if (selectedId === id) {
-      show = toBody > 2.1;
+      show = kind === "galaxy" ? toBody > 6 : toBody > 1.4;
     }
 
     g.visible = show;
@@ -78,7 +93,15 @@ export function BodyLabel({ id, name, kind }: BodyLabelProps) {
   });
 
   const cls =
-    kind === "moon" ? "helio-label helio-label-moon" : kind === "dwarf" ? "helio-label helio-label-dwarf" : "helio-label";
+    kind === "galaxy"
+      ? "helio-label helio-label-galaxy"
+      : kind === "system"
+        ? "helio-label helio-label-system"
+        : kind === "moon" || kind === "comet"
+          ? "helio-label helio-label-moon"
+          : kind === "dwarf"
+            ? "helio-label helio-label-dwarf"
+            : "helio-label";
 
   return (
     <group ref={group} visible={false}>

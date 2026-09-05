@@ -5,6 +5,16 @@
 
 import { Vector3 } from "three";
 import type { BodyDef } from "../data/bodies";
+import type { CometDef } from "../data/comets";
+
+/** Minimalny zestaw elementów — planety i komety dzielą solver. */
+export interface OrbitalElements {
+  au: number;
+  eccentricity: number;
+  inclinationDeg: number;
+  meanLongitudeJ2000: number;
+  meanMotionDegPerDay: number;
+}
 
 /** JD południa 1 stycznia 2000 (epoka elementów średnich). */
 const JD_J2000 = 2_451_545.0;
@@ -38,12 +48,18 @@ export function daysSinceJ2000(date: Date): number {
  * Dla e < 0.3 (nawet Pluton 0.25) zbiega w 4–5 krokach.
  */
 export function solveEccentricAnomaly(meanAnomaly: number, eccentricity: number): number {
-  let E = meanAnomaly;
-  if (eccentricity > 0.15) {
-    E = meanAnomaly + eccentricity * Math.sin(meanAnomaly);
+  // Normalizacja do (−π, π] — ważne przy kometach z e ≈ 1.
+  let M = ((meanAnomaly + Math.PI) % (Math.PI * 2)) - Math.PI;
+  if (Number.isNaN(M)) M = 0;
+  // Przy dużym mimośrodzie start od π (inaczej Newton potrafi utknąć).
+  let E = eccentricity > 0.8 ? Math.PI * Math.sign(M || 1) : M;
+  if (eccentricity > 0.15 && eccentricity <= 0.8) {
+    E = M + eccentricity * Math.sin(M);
   }
-  for (let i = 0; i < 8; i += 1) {
-    const dE = (E - eccentricity * Math.sin(E) - meanAnomaly) / (1 - eccentricity * Math.cos(E));
+  for (let i = 0; i < 14; i += 1) {
+    const denom = 1 - eccentricity * Math.cos(E);
+    if (Math.abs(denom) < 1e-12) break;
+    const dE = (E - eccentricity * Math.sin(E) - M) / denom;
     E -= dE;
     if (Math.abs(dE) < 1e-8) break;
   }
@@ -63,7 +79,7 @@ export interface KeplerState {
  * Pozycja heliocentryczna ciała w epoce `date`.
  * Długość średnia: L0 + n·Δt, potem Kepler → r, ν, inklinacja.
  */
-export function keplerPosition(body: BodyDef, date: Date, target?: Vector3): KeplerState {
+export function keplerPosition(body: OrbitalElements, date: Date, target?: Vector3): KeplerState {
   if (body.au <= 0) {
     target?.set(0, 0, 0);
     return { x: 0, y: 0, z: 0, au: 0 };
@@ -89,7 +105,7 @@ export function keplerPosition(body: BodyDef, date: Date, target?: Vector3): Kep
 }
 
 /** Próbki elipsy do Line — 128 punktów wystarcza przy dashed Pluto. */
-export function orbitPoints(body: BodyDef, samples = 128): Vector3[] {
+export function orbitPoints(body: Pick<OrbitalElements, "au" | "eccentricity" | "inclinationDeg">, samples = 128): Vector3[] {
   const points: Vector3[] = [];
   const e = body.eccentricity;
   const a = body.au;
@@ -118,3 +134,8 @@ export function followDistance(bodyRadius: number, moonSpan = 0): number {
 export function clampMinDistance(bodyRadius: number): number {
   return Math.max(bodyRadius * 3.2, 1.2);
 }
+
+/** Alias typowy — TypeScript niech wie, że kometa jest legalnym inputem. */
+export type KeplerBody = BodyDef | CometDef;
+
+export const GALAXY_OVERVIEW = { x: 160, y: 380, z: 820 } as const;

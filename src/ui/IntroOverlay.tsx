@@ -33,14 +33,14 @@ export function IntroOverlay() {
         </p>
         <h1 className="mt-2 text-3xl font-medium tracking-tight text-balance text-fg">Helioskop</h1>
         <p className="mt-3 text-sm leading-relaxed text-pretty text-muted">
-          Schematyczny model Keplera: Słońce, osiem planet, Pluton i główne księżyce. Skala
-          odległości jest lekko ściśnięta, żeby zewnętrzne orbity były czytelne; rozmiary ciał
-          powiększone.
+          Schematyczny model Keplera: Słońce, planety, księżyce i komety. Dalej — Grupa Lokalna
+          (Droga Mleczna, Andromeda, Trójkąt) z przykładowymi układami oraz ewolucja Słońca.
+          Skala jest ściśnięta; treści spekulatywne są podpisane.
         </p>
         <ul className="mt-4 space-y-1.5 font-mono text-[12px] text-muted">
-          <li>Przeciągnij, aby obracać</li>
-          <li>Szczypnij lub przewiń, aby przybliżyć</li>
-          <li>Dotknij planety — zobaczysz księżyce na orbicie</li>
+          <li>Przeciągnij, aby obracać · R = reset kamery</li>
+          <li>Grupa Lokalna → galaktyka → układ wzorcowy</li>
+          <li>Aktywność: Cicha / Normalna / Chaos</li>
           <li>Start od dzisiejszych pozycji; idle: 1 s = 10 dni</li>
         </ul>
         <p className="mt-4 text-[11px] leading-snug text-subtle">

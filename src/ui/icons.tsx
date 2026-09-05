@@ -93,3 +93,13 @@ export function IconReset(p: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+/** Przełącznik „Komety” — jądro + ogon. */
+export function IconComet(p: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" className={p.className} {...base}>
+      <circle cx="16.5" cy="7.5" r="2.4" />
+      <path d="M14 10L4 20M15.2 12.2L7 21M12.4 9.2L5 17" />
+    </svg>
+  );
+}

@@ -5,13 +5,16 @@ import { simClock } from "../lib/clock";
 import { useObservatory } from "../store/observatory";
 import { BodyPanel } from "./BodyPanel";
 import { EphemerisPanel } from "./EphemerisPanel";
+import { ActivityBar } from "./ActivityBar";
+import { EventToasts } from "./EventToasts";
 import { Header } from "./Header";
 import { PlanetChips } from "./PlanetChips";
+import { ScenarioBar } from "./ScenarioBar";
 import { Toolbar } from "./Toolbar";
 
 /**
- * Nakładka HUD: klawiatura, zegar daty, panel ciała / efemeryd, pasek.
- * Space = pauza, R = reset kamery.
+ * Nakładka HUD: klawiatura, zegar daty, wydarzenia, panel ciała, pasek.
+ * Space = pauza, R = reset kamery, Esc = zamknij modal / odznacz.
  */
 export function Hud() {
   const started = useObservatory((s) => s.started);
@@ -22,6 +25,7 @@ export function Hud() {
   const setSpeed = useObservatory((s) => s.setSpeed);
   const select = useObservatory((s) => s.select);
   const resetView = useObservatory((s) => s.resetView);
+  const dismissSerious = useObservatory((s) => s.dismissSerious);
 
   const running = started && !paused && !warping;
   const [date, setDate] = useState(() => simClock.getDate());
@@ -36,6 +40,8 @@ export function Hud() {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.code === "Space") {
         e.preventDefault();
+        // Przy otwartym modalu Space nie wznawia — najpierw Kontynuuj / Esc.
+        if (useObservatory.getState().serious) return;
         togglePaused();
         return;
       }
@@ -64,11 +70,17 @@ export function Hud() {
         if (body) select(body.id);
         return;
       }
-      if (e.key === "Escape") select(null);
+      if (e.key === "Escape") {
+        if (useObservatory.getState().serious) {
+          dismissSerious();
+          return;
+        }
+        select(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [speed, togglePaused, setSpeed, select, resetView]);
+  }, [speed, togglePaused, setSpeed, select, resetView, dismissSerious]);
 
   if (!started) return null;
 
@@ -76,6 +88,9 @@ export function Hud() {
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-5">
       <div className="flex flex-col gap-3">
         <Header date={date} />
+        <ScenarioBar />
+        <ActivityBar />
+        <EventToasts />
         <EphemerisPanel date={date} />
         <BodyPanel date={date} />
       </div>

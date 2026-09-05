@@ -74,26 +74,30 @@ export function GalaxyField() {
           onPick={select}
         />
       ))}
-      <mesh
-        position={SGR_A.position}
-        onClick={(e) => {
-          e.stopPropagation();
-          select(SGR_A.id);
-        }}
-        onPointerOver={() => {
-          document.body.style.cursor = "pointer";
-        }}
-        onPointerOut={() => {
-          document.body.style.cursor = "auto";
-        }}
-      >
-        <sphereGeometry args={[3.2, 16, 12]} />
-        <meshBasicMaterial color="#111018" />
-      </mesh>
-      <mesh position={SGR_A.position} rotation={[1.15, 0.3, 0]}>
-        <ringGeometry args={[4.2, 11, 64]} />
-        <meshBasicMaterial color="#ffb36a" transparent opacity={0.55} side={DoubleSide} depthWrite={false} />
-      </mesh>
+      {!closeup && (
+        <>
+          <mesh
+            position={SGR_A.position}
+            onClick={(e) => {
+              e.stopPropagation();
+              select(SGR_A.id);
+            }}
+            onPointerOver={() => {
+              document.body.style.cursor = "pointer";
+            }}
+            onPointerOut={() => {
+              document.body.style.cursor = "auto";
+            }}
+          >
+            <sphereGeometry args={[3.2, 16, 12]} />
+            <meshBasicMaterial color="#111018" />
+          </mesh>
+          <mesh position={SGR_A.position} rotation={[1.15, 0.3, 0]}>
+            <ringGeometry args={[4.2, 11, 64]} />
+            <meshBasicMaterial color="#ffb36a" transparent opacity={0.55} side={DoubleSide} depthWrite={false} />
+          </mesh>
+        </>
+      )}
       <mesh position={SOLAR_PIN}>
         <sphereGeometry args={[2.4, 10, 8]} />
         <meshBasicMaterial color="#f3c56b" toneMapped={false} />

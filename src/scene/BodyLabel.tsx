@@ -4,7 +4,9 @@ import { Html } from "@react-three/drei";
 import { type Group, Vector3 } from "three";
 import { BODY_BY_ID } from "../data/bodies";
 import { MOON_BY_ID } from "../data/moons";
+import { yearsFromToday } from "../lib/clock";
 import { readPosition } from "../lib/positions";
+import { sunPhase } from "../lib/solarPhase";
 import { useObservatory } from "../store/observatory";
 
 interface BodyLabelProps {
@@ -34,6 +36,12 @@ export function BodyLabel({ id, name, kind }: BodyLabelProps) {
     if (!g) return;
     const pos = readPosition(id);
     if (!pos) {
+      g.visible = false;
+      return;
+    }
+    // Olbrzym / karzeł „połyka” Merkurego i Wenus — etykiety też chowamy.
+    const swallowed = sunPhase(yearsFromToday()).swallowInner;
+    if (swallowed && (id === "mercury" || id === "venus")) {
       g.visible = false;
       return;
     }

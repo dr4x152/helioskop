@@ -99,7 +99,10 @@ function SceneSwitch() {
       <group>
         <GalaxyField />
         {selectedId === "sgr-a" && <BlackHoleCloseup />}
-        {showLabels && (
+        {showLabels && selectedId === "sgr-a" && (
+          <BodyLabel id="sgr-a" name="Sgr A*" kind="galaxy" />
+        )}
+        {showLabels && selectedId !== "sgr-a" && (
           <>
             <BodyLabel id="milkyway" name="Droga Mleczna" kind="galaxy" />
             <BodyLabel id="andromeda" name="Andromeda" kind="galaxy" />

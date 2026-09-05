@@ -1,0 +1,20 @@
+# Zależności i cache
+node_modules
+dist
+dist-ssr
+*.local
+.vite
+.turbo
+
+# TypeScript
+*.tsbuildinfo
+
+# Logi i system
+*.log
+.DS_Store
+Thumbs.db
+
+# Edytory
+.idea
+.vscode/*
+!.vscode/extensions.json

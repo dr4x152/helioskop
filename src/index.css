@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+/**
+ * Paleta Helioskopu — ciemne obserwatorium, wysoki kontrast,
+ * akcent zbliżony do barwy fotosfery. Żadnego brandingu Grok.
+ */
+@theme {
+  --font-sans: "Segoe UI", "Inter", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "ui-monospace", "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --color-void: #07080c;
+  --color-fg: #f4f1ea;
+  --color-muted: #9aa3b2;
+  --color-subtle: #6d7584;
+  --color-surface: #12151c;
+  --color-surface-2: #1b202a;
+  --color-border: #2a3140;
+  --color-accent: #e8d2a0;
+  --color-accent-fg: #1a1408;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #07080c;
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  overflow: hidden;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Ukrywa pasek przewijania na pasku chipów planet. */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/**
+ * Etykiety 3D — cienki cień, żeby czytać je na tle Słońca.
+ * Wewnętrzne planety dostają dodatkowy offset w komponencie.
+ */
+.helio-label {
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #f6f3ec;
+  text-shadow:
+    0 0 8px rgba(7, 8, 12, 0.95),
+    0 1px 2px rgba(7, 8, 12, 0.9);
+}
+
+.helio-label-moon {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #c9d0da;
+}
+
+.helio-label-dwarf {
+  color: #e8d2a0;
+}
+
+button {
+  font: inherit;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

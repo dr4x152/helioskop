@@ -24,9 +24,11 @@ const CLEAR = new Color("#07080c");
 function Lights() {
   const sun = useRef<PointLight>(null);
   useFrame(() => {
+    const { viewScale } = useObservatory.getState();
     const phase = sunPhase(yearsFromToday());
     if (sun.current) {
-      sun.current.intensity = phase.light;
+      // W skali galaktycznej gasimy lampę Słońca — nie rozświetla billboardów.
+      sun.current.intensity = viewScale === "galaxy" ? 0.2 : phase.light;
       sun.current.color.set(phase.id === "whitedwarf" ? "#c8d6ff" : phase.id === "redgiant" ? "#ff7a30" : "#fff6e0");
     }
   });

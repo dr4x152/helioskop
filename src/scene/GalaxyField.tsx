@@ -51,6 +51,7 @@ function GalaxySprite({
 /** Drogę Mleczną, M31, M33 + znacznik Sgr A* i pinezkę Słońca. */
 export function GalaxyField() {
   const select = useObservatory((s) => s.select);
+  const closeup = useObservatory((s) => s.selectedId === SGR_A.id);
   const sgr = useMemo(() => new Vector3(...SGR_A.position), []);
   const pin = useMemo(() => new Vector3(...SOLAR_PIN), []);
 
@@ -61,7 +62,8 @@ export function GalaxyField() {
 
   return (
     <group>
-      {GALAXIES.map((g) => (
+      {/* Przy zbliżeniu Sgr A* chowamy dysk MW — inaczej billboard zalewa kadr beżem. */}
+      {GALAXIES.filter((g) => !(closeup && g.id === "milkyway")).map((g) => (
         <GalaxySprite
           key={g.id}
           id={g.id}

@@ -1,12 +1,13 @@
 import { useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { type Group, Vector3 } from "three";
+import { type Group, type MeshBasicMaterial, Vector3 } from "three";
 import { type BodyDef } from "../data/bodies";
 import { MOONS_BY_PARENT } from "../data/moons";
-import { simClock } from "../lib/clock";
+import { simClock, yearsFromToday } from "../lib/clock";
 import { keplerPosition } from "../lib/kepler";
 import { readPosition, writePosition } from "../lib/positions";
 import { jupiterTexture, plutoTexture } from "../lib/proceduralTextures";
+import { sunPhase } from "../lib/solarPhase";
 import { useObservatory } from "../store/observatory";
 import { Atmosphere } from "./Atmosphere";
 import { MoonBody, MoonOrbit } from "./MoonBody";
@@ -30,6 +31,7 @@ export function CelestialBody({ def, onPick }: CelestialBodyProps) {
   const root = useRef<Group>(null);
   const spin = useRef<Group>(null);
   const clouds = useRef<Group>(null);
+  const sunMat = useRef<MeshBasicMaterial>(null);
   const isSun = def.id === "sun";
   const segs = def.radius > 0.7 ? 48 : 32;
 
@@ -46,14 +48,23 @@ export function CelestialBody({ def, onPick }: CelestialBodyProps) {
     const g = root.current;
     if (!g) return;
     const date = simClock.getDate();
+    const phase = sunPhase(yearsFromToday());
     if (isSun) {
       g.position.set(0, 0, 0);
+      g.scale.setScalar(phase.scale);
       writePosition("sun", g.position);
       if (spin.current) {
         spin.current.rotation.y = (simClock.simDays / def.periodDays) * Math.PI * 2;
       }
+      if (sunMat.current) sunMat.current.color.set(phase.tint);
       return;
     }
+    // Czerwony olbrzym / karzeł: Merkury i Wenus znikają z kadru.
+    if (phase.swallowInner && (def.id === "mercury" || def.id === "venus")) {
+      g.visible = false;
+      return;
+    }
+    g.visible = true;
     keplerPosition(def, date, _scratch);
     g.position.copy(_scratch);
     writePosition(def.id, g.position);
@@ -85,7 +96,7 @@ export function CelestialBody({ def, onPick }: CelestialBodyProps) {
         >
           <sphereGeometry args={[def.radius, segs, segs]} />
           {isSun ? (
-            <meshBasicMaterial map={map} color={map ? "#ffffff" : def.color} toneMapped={false} />
+            <meshBasicMaterial ref={sunMat} map={map} color={map ? "#ffffff" : def.color} toneMapped={false} />
           ) : def.id === "uranus" || def.id === "neptune" ? (
             <meshStandardMaterial map={map} color={map ? "#ffffff" : def.color} roughness={0.38} metalness={0.18} />
           ) : (

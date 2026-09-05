@@ -1,22 +1,36 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { AdditiveBlending, type Sprite } from "three";
+import { yearsFromToday } from "../lib/clock";
 import { glowTexture } from "../lib/proceduralTextures";
+import { sunPhase } from "../lib/solarPhase";
 
 interface SunGlowProps {
   radius: number;
 }
 
-/** Pulsująca poświata — dwa sprite'y, żeby tarcza nie była „gołą kulą”. */
+/** Pulsująca poświata — kolor i skala zależą od fazy ewolucji Słońca. */
 export function SunGlow({ radius }: SunGlowProps) {
   const inner = useRef<Sprite>(null);
   const outer = useRef<Sprite>(null);
   const map = glowTexture();
 
   useFrame(() => {
+    const phase = sunPhase(yearsFromToday());
     const pulse = 1 + Math.sin(performance.now() * 0.00055) * 0.06;
-    inner.current?.scale.setScalar(radius * 5.8 * pulse);
-    outer.current?.scale.setScalar(radius * 9.4 * (0.96 + pulse * 0.04));
+    const mul = phase.glowMul * phase.scale;
+    inner.current?.scale.setScalar(radius * 5.8 * pulse * mul);
+    outer.current?.scale.setScalar(radius * 9.4 * (0.96 + pulse * 0.04) * mul);
+    const im = inner.current?.material;
+    const om = outer.current?.material;
+    if (im) {
+      im.color.set(phase.glow);
+      im.opacity = phase.id === "whitedwarf" ? 0.28 : 0.62;
+    }
+    if (om) {
+      om.color.set(phase.glow);
+      om.opacity = phase.id === "whitedwarf" ? 0.1 : 0.22;
+    }
   });
 
   return (

@@ -4,6 +4,8 @@ import { OrbitControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Vector3 } from "three";
 import { BODY_BY_ID } from "../data/bodies";
+import { COMET_BY_ID } from "../data/comets";
+import { BLACKHOLE_CAMERA, GALAXIES, GALAXY_CAMERA, SGR_A } from "../data/galaxies";
 import { MOON_BY_ID, MOONS_BY_PARENT } from "../data/moons";
 import { clampMinDistance, followDistance, OVERVIEW_CAMERA } from "../lib/kepler";
 import { readPosition } from "../lib/positions";
@@ -14,8 +16,13 @@ const _prev = new Vector3();
 const _goalCam = new Vector3();
 const _goalTarget = new Vector3();
 
+const GALAXY_IDS = new Set([...GALAXIES.map((g) => g.id), SGR_A.id, "solar-pin"]);
+
 function focusDistance(id: string | null): number {
   if (!id) return 78;
+  if (id === SGR_A.id) return 22;
+  if (GALAXY_IDS.has(id)) return 420;
+  if (COMET_BY_ID[id]) return 8;
   const moon = MOON_BY_ID[id];
   if (moon) return followDistance(moon.radius, moon.orbitRadius);
   const body = BODY_BY_ID[id];
@@ -28,19 +35,21 @@ function focusDistance(id: string | null): number {
 
 function bodyRadius(id: string | null): number {
   if (!id) return 2.55;
+  if (id === SGR_A.id) return 3;
+  if (COMET_BY_ID[id]) return 0.2;
   return MOON_BY_ID[id]?.radius ?? BODY_BY_ID[id]?.radius ?? 0.3;
 }
 
 /**
- * OrbitControls + śledzenie celu.
- * Przy zmianie focusToken wjeżdżamy do ciała / wracamy do przeglądu.
- * minDistance rośnie wraz z tarczą, żeby UI nie tonęło w zbliżeniu.
+ * OrbitControls + śledzenie.
+ * `viewScale` przełącza kadr: układ vs kosmos lokalny / Sgr A*.
  */
 export function CameraRig() {
   const controls = useRef<OrbitControlsImpl>(null);
   const selectedId = useObservatory((s) => s.selectedId);
   const follow = useObservatory((s) => s.follow);
   const focusToken = useObservatory((s) => s.focusToken);
+  const viewScale = useObservatory((s) => s.viewScale);
   const flying = useRef(false);
   const flyT = useRef(0);
   const fromCam = useRef(new Vector3());
@@ -56,7 +65,20 @@ export function CameraRig() {
     fromCam.current.copy(camera.position);
     fromTarget.current.copy(c.target);
 
+    const scale = useObservatory.getState().viewScale;
     const id = useObservatory.getState().selectedId;
+
+    if (scale === "galaxy") {
+      if (id === SGR_A.id) {
+        _goalCam.set(BLACKHOLE_CAMERA.x, BLACKHOLE_CAMERA.y, BLACKHOLE_CAMERA.z);
+        _goalTarget.set(...SGR_A.position);
+      } else {
+        _goalCam.set(GALAXY_CAMERA.x, GALAXY_CAMERA.y, GALAXY_CAMERA.z);
+        _goalTarget.set(0, 0, 0);
+      }
+      return;
+    }
+
     if (!id) {
       _goalCam.set(OVERVIEW_CAMERA.x, OVERVIEW_CAMERA.y, OVERVIEW_CAMERA.z);
       _goalTarget.set(0, 0, 0);
@@ -76,17 +98,17 @@ export function CameraRig() {
       _goalTarget.copy(p);
     };
     aim();
-  }, [focusToken, camera]);
+  }, [focusToken, camera, viewScale]);
 
   useFrame((_, dt) => {
     const c = controls.current;
     if (!c) return;
 
-    const minD = clampMinDistance(bodyRadius(selectedId));
-    c.minDistance = minD;
+    c.minDistance = viewScale === "galaxy" ? 12 : clampMinDistance(bodyRadius(selectedId));
+    c.maxDistance = viewScale === "galaxy" ? 2800 : 220;
 
     if (flying.current) {
-      flyT.current = Math.min(1, flyT.current + dt / 0.85);
+      flyT.current = Math.min(1, flyT.current + dt / 0.9);
       const u = flyT.current;
       const ease = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
       camera.position.lerpVectors(fromCam.current, _goalCam, ease);
@@ -100,7 +122,7 @@ export function CameraRig() {
       return;
     }
 
-    if (selectedId && follow) {
+    if (viewScale === "system" && selectedId && follow && !GALAXY_IDS.has(selectedId)) {
       const p = readPosition(selectedId);
       if (p) {
         if (_prev.lengthSq() > 0) {
@@ -124,7 +146,7 @@ export function CameraRig() {
       enableDamping
       dampingFactor={0.08}
       minDistance={1.2}
-      maxDistance={220}
+      maxDistance={2800}
       maxPolarAngle={Math.PI * 0.92}
     />
   );

@@ -3,6 +3,7 @@ import { SPEED_PRESETS } from "../data/speeds";
 import { simClock } from "../lib/clock";
 import { useObservatory } from "../store/observatory";
 import {
+  IconComet,
   IconFollow,
   IconLabelsOff,
   IconLabelsOn,
@@ -57,6 +58,7 @@ export function Toolbar() {
   const selectedId = useObservatory((s) => s.selectedId);
   const showOrbits = useObservatory((s) => s.showOrbits);
   const showMoons = useObservatory((s) => s.showMoons);
+  const showComets = useObservatory((s) => s.showComets);
   const showLabels = useObservatory((s) => s.showLabels);
   const warping = useObservatory((s) => s.warping);
   const togglePaused = useObservatory((s) => s.togglePaused);
@@ -65,6 +67,7 @@ export function Toolbar() {
   const jumpYears = useObservatory((s) => s.jumpYears);
   const toggleOrbits = useObservatory((s) => s.toggleOrbits);
   const toggleMoons = useObservatory((s) => s.toggleMoons);
+  const toggleComets = useObservatory((s) => s.toggleComets);
   const toggleLabels = useObservatory((s) => s.toggleLabels);
   const setFollow = useObservatory((s) => s.setFollow);
   const resetView = useObservatory((s) => s.resetView);
@@ -126,6 +129,9 @@ export function Toolbar() {
       </Toggle>
       <Toggle label="Księżyce" active={showMoons} onClick={toggleMoons}>
         <IconMoons className="size-4" />
+      </Toggle>
+      <Toggle label="Komety" active={showComets} onClick={toggleComets}>
+        <IconComet className="size-4" />
       </Toggle>
       <Toggle label="Etykiety" active={showLabels} onClick={toggleLabels}>
         {showLabels ? <IconLabelsOn className="size-4" /> : <IconLabelsOff className="size-4" />}

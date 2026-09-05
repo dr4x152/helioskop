@@ -1,4 +1,5 @@
 import { ORBITING_BODIES } from "../data/bodies";
+import { yearsFromToday } from "../lib/clock";
 import { formatUtc } from "../lib/format";
 import { keplerPosition } from "../lib/kepler";
 import { useObservatory } from "../store/observatory";
@@ -12,7 +13,9 @@ export function EphemerisPanel({ date }: EphemerisPanelProps) {
   const open = useObservatory((s) => s.showEphemeris);
   const hide = useObservatory((s) => s.setEphemeris);
   const selectedId = useObservatory((s) => s.selectedId);
-  if (!open || selectedId) return null;
+  const viewScale = useObservatory((s) => s.viewScale);
+  // W kosmosie lokalnym i na osi miliardów lat lista AU nie ma sensu.
+  if (!open || selectedId || viewScale === "galaxy" || Math.abs(yearsFromToday()) >= 8_000) return null;
 
   const rows = ORBITING_BODIES.map((b) => ({
     id: b.id,

@@ -16,7 +16,13 @@ export interface TimeWarp {
 export const simClock = {
   simDays: 0,
   getDate(): Date {
-    return new Date(Date.now() + this.simDays * 86_400_000);
+    // Date.js pęka przy miliardach lat — wtedy zwracamy „teraz” jako atrapę.
+    const ms = Date.now() + this.simDays * 86_400_000;
+    if (!Number.isFinite(ms) || Math.abs(this.simDays) > 2_500_000) {
+      return new Date();
+    }
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? new Date() : d;
   },
 };
 

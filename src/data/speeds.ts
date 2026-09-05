@@ -15,6 +15,8 @@ export const SPEED_PRESETS: SpeedPreset[] = [
   { id: "30d", label: "1 mies.", daysPerSecond: 30, hint: "1 sekunda ≈ miesiąc" },
   { id: "365d", label: "1 rok", daysPerSecond: 365, hint: "1 sekunda = 1 rok" },
   { id: "3650d", label: "10 lat", daysPerSecond: 3650, hint: "1 sekunda = dekada" },
+  { id: "1ky", label: "1 tys.", daysPerSecond: 365_250, hint: "1 sekunda = 1000 lat" },
+  { id: "1my", label: "1 mln", daysPerSecond: 365_250_000, hint: "1 sekunda = milion lat (scenariusz)" },
 ];
 
 export const DEFAULT_SPEED = 10;

@@ -1,26 +1,34 @@
 import { simClock, yearsFromToday } from "../lib/clock";
-import { formatUtc } from "../lib/format";
+import { formatEpoch } from "../lib/format";
+import { sunPhase } from "../lib/solarPhase";
 import { useObservatory } from "../store/observatory";
 
 interface HeaderProps {
   date: Date;
 }
 
-/** Tytuł + zegar UTC. Żadnego „Created with Grok”. */
+/** Tytuł + zegar UTC albo oś miliardów lat. Żadnego „Created with Grok”. */
 export function Header({ date }: HeaderProps) {
   const speed = useObservatory((s) => s.speed);
   const warping = useObservatory((s) => s.warping);
+  const viewScale = useObservatory((s) => s.viewScale);
+  const solarScenario = useObservatory((s) => s.solarScenario);
   const atToday = Math.abs(simClock.simDays) < 0.5;
   const years = yearsFromToday();
+  const phase = sunPhase(years);
 
   let kicker = "Epoka UTC";
-  if (warping) kicker = "Przeskok · UTC";
+  if (viewScale === "galaxy") kicker = "Kosmos lokalny · schemat";
+  else if (warping) kicker = "Przeskok · oś czasu";
+  else if (Math.abs(years) >= 8_000) kicker = "Oś czasu · schemat";
   else if (atToday) kicker = "Teraz · UTC";
 
   let sub = `1 s = ${speed} d`;
-  if (warping) sub = "planety jadą na nowe pozycje";
+  if (viewScale === "galaxy") sub = "Droga Mleczna · M31 · M33 · Sgr A*";
+  else if (warping) sub = "ciała jadą na nowe pozycje";
+  else if (solarScenario) sub = `Ewolucja Słońca · ${phase.label}`;
   else if (atToday) sub = "pozycje z tej chwili";
-  else if (Math.abs(years) >= 0.95) sub = `${years > 0 ? "+" : ""}${Math.round(years)} lat od dziś`;
+  else if (Math.abs(years) >= 0.95) sub = formatEpoch(date, years);
   else if (speed >= 365) sub = `1 s = ${speed / 365} lat`;
 
   return (
@@ -35,7 +43,7 @@ export function Header({ date }: HeaderProps) {
       </div>
       <div className="rounded-lg bg-surface/80 px-3 py-2 shadow-[0_0_0_1px_#2a3140]">
         <p className="font-mono text-[10px] tracking-[0.14em] text-subtle uppercase">{kicker}</p>
-        <p className="font-mono text-sm tabular-nums text-fg">{formatUtc(date)}</p>
+        <p className="font-mono text-sm tabular-nums text-fg">{formatEpoch(date, years)}</p>
         <p className="font-mono text-[11px] tabular-nums text-muted">{sub}</p>
       </div>
     </header>

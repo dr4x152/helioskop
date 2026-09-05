@@ -195,3 +195,40 @@ export function glowTexture(): CanvasTexture {
     return canvas;
   });
 }
+
+/** Dysk spiralny do trybu „Kosmos lokalny”. */
+export function galaxyDiskTexture(id: string, hex: string): CanvasTexture {
+  return getCached(`galaxy:${id}`, () => {
+    const s = 256;
+    const canvas = document.createElement("canvas");
+    canvas.width = s;
+    canvas.height = s;
+    const ctx = canvas.getContext("2d")!;
+    const cx = s / 2;
+    const cy = s / 2;
+    ctx.clearRect(0, 0, s, s);
+    const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, s / 2);
+    g.addColorStop(0, "rgba(255,240,210,0.95)");
+    g.addColorStop(0.2, hex);
+    g.addColorStop(0.55, "rgba(120,140,180,0.32)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, s, s);
+    ctx.strokeStyle = "rgba(230,220,200,0.3)";
+    ctx.lineWidth = 7;
+    for (let arm = 0; arm < 3; arm += 1) {
+      ctx.beginPath();
+      for (let i = 0; i < 90; i += 1) {
+        const t = i / 90;
+        const a = arm * 2.1 + t * 4.6;
+        const r = 16 + t * 100;
+        const x = cx + Math.cos(a) * r;
+        const y = cy + Math.sin(a) * r * 0.72;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    return canvas;
+  });
+}

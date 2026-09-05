@@ -10,7 +10,7 @@ import { useObservatory } from "../store/observatory";
 interface BodyLabelProps {
   id: string;
   name: string;
-  kind: "star" | "planet" | "dwarf" | "moon";
+  kind: "star" | "planet" | "dwarf" | "moon" | "comet" | "galaxy";
 }
 
 const _cam = new Vector3();
@@ -52,7 +52,11 @@ export function BodyLabel({ id, name, kind }: BodyLabelProps) {
     g.position.y += kind === "star" ? 0.85 : 0.22;
 
     let show = false;
-    if (kind === "moon") {
+    if (kind === "galaxy") {
+      show = toBody > 20 && toBody < 4000;
+    } else if (kind === "comet") {
+      show = toBody > 1.2 && toBody < 80;
+    } else if (kind === "moon") {
       show = toBody < 16 && toBody > 0.45;
       if (selectedId && selectedId !== id && selectedId !== parentId) {
         show = show && toBody < 8;
@@ -78,7 +82,11 @@ export function BodyLabel({ id, name, kind }: BodyLabelProps) {
   });
 
   const cls =
-    kind === "moon" ? "helio-label helio-label-moon" : kind === "dwarf" ? "helio-label helio-label-dwarf" : "helio-label";
+    kind === "moon" || kind === "comet"
+      ? "helio-label helio-label-moon"
+      : kind === "dwarf" || kind === "galaxy"
+        ? "helio-label helio-label-dwarf"
+        : "helio-label";
 
   return (
     <group ref={group} visible={false}>

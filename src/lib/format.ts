@@ -41,3 +41,23 @@ export function formatDay(hours: number): string {
 export function formatAu(au: number): string {
   return `${au.toFixed(3)} AU`;
 }
+
+/** Lata od dziś: 1,2 tys. / 5,4 mld — gdy kalendarz JS już nie wystarcza. */
+export function formatLongYears(years: number): string {
+  const sign = years >= 0 ? "+" : "−";
+  const a = Math.abs(years);
+  const nf = new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 1 });
+  if (a >= 1e9) return `${sign}${nf.format(a / 1e9)} mld lat od dziś`;
+  if (a >= 1e6) return `${sign}${nf.format(a / 1e6)} mln lat od dziś`;
+  if (a >= 1e3) return `${sign}${nf.format(a / 1e3)} tys. lat od dziś`;
+  return `${sign}${Math.round(a)} lat od dziś`;
+}
+
+/** Kalendarz UTC albo oś miliardów lat (Date overflow ~ rok 275 tys.). */
+export function formatEpoch(date: Date, yearsFromNow: number): string {
+  if (!Number.isFinite(yearsFromNow) || Math.abs(yearsFromNow) >= 8_000) {
+    return formatLongYears(yearsFromNow);
+  }
+  if (Number.isNaN(date.getTime())) return formatLongYears(yearsFromNow);
+  return DATE_FMT.format(date);
+}

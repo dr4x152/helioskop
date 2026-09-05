@@ -32,13 +32,14 @@ export function ScenarioBar() {
       </button>
       <button
         type="button"
+        title="Grupa Lokalna: Droga Mleczna, Andromeda, Trójkąt"
         onClick={() => setViewScale("galaxy")}
         className={cx(
           "h-10 rounded-md px-2.5 font-mono text-[11px] tracking-wide uppercase",
           viewScale === "galaxy" ? "bg-accent text-accent-fg" : "text-muted hover:bg-surface-2 hover:text-fg",
         )}
       >
-        Kosmos lokalny
+        Grupa Lokalna
       </button>
       <span className="mx-1 hidden h-6 w-px bg-border sm:block" />
       <button

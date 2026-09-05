@@ -1,6 +1,6 @@
 import { BODIES } from "../data/bodies";
 import { COMETS } from "../data/comets";
-import { GALAXIES, SGR_A } from "../data/galaxies";
+import { GALAXIES, PROXY_BY_ID, SGR_A, systemsForGalaxy } from "../data/galaxies";
 import { useObservatory } from "../store/observatory";
 
 function cx(...parts: Array<string | false | undefined>): string {
@@ -36,24 +36,43 @@ function Chip({
   );
 }
 
-/** Pasek szybkiego wyboru — planety albo kosmos lokalny, plus komety. */
+/** Pasek: planety / komety albo galaktyki + ich układy wzorcowe. */
 export function PlanetChips() {
   const selectedId = useObservatory((s) => s.selectedId);
   const select = useObservatory((s) => s.select);
+  const resetView = useObservatory((s) => s.resetView);
   const viewScale = useObservatory((s) => s.viewScale);
   const showComets = useObservatory((s) => s.showComets);
 
   if (viewScale === "galaxy") {
+    const focused =
+      selectedId && GALAXIES.some((g) => g.id === selectedId)
+        ? selectedId
+        : selectedId
+          ? PROXY_BY_ID[selectedId]?.galaxyId
+          : undefined;
+    const systems = focused ? systemsForGalaxy(focused) : [];
+
     return (
       <nav
-        aria-label="Kosmos lokalny"
+        aria-label="Grupa Lokalna"
         className="pointer-events-auto no-scrollbar -mx-1 flex gap-1 overflow-x-auto px-1"
       >
+        <Chip id="overview" name="Przegląd" color="#9aa3b2" on={!selectedId} onClick={() => resetView()} />
         {GALAXIES.map((g) => (
           <Chip key={g.id} id={g.id} name={g.name} color={g.color} on={selectedId === g.id} onClick={select} />
         ))}
         <Chip id={SGR_A.id} name="Sgr A*" color="#ff9a4a" on={selectedId === SGR_A.id} onClick={select} />
-        <Chip id="solar-pin" name="Układ" color="#f3c56b" on={false} onClick={select} />
+        {systems.map((p) => (
+          <Chip
+            key={p.id}
+            id={p.id}
+            name={p.name}
+            color={p.starColor}
+            on={selectedId === p.id}
+            onClick={select}
+          />
+        ))}
       </nav>
     );
   }

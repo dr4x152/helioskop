@@ -12,7 +12,7 @@ import { useObservatory } from "../store/observatory";
 interface BodyLabelProps {
   id: string;
   name: string;
-  kind: "star" | "planet" | "dwarf" | "moon" | "comet" | "galaxy";
+  kind: "star" | "planet" | "dwarf" | "moon" | "comet" | "galaxy" | "system";
 }
 
 const _cam = new Vector3();
@@ -57,11 +57,14 @@ export function BodyLabel({ id, name, kind }: BodyLabelProps) {
     const radial = pos.lengthSq() > 1e-6 ? pos.clone().normalize() : new Vector3(0, 1, 0);
     const lift = kind === "star" ? r * 1.55 : r * 1.35 + 0.18;
     g.position.copy(pos).addScaledVector(radial, lift);
-    g.position.y += kind === "star" ? 0.85 : 0.22;
+    g.position.y += kind === "star" ? 0.85 : kind === "galaxy" ? 6 : kind === "system" ? 1.4 : 0.22;
 
     let show = false;
     if (kind === "galaxy") {
-      show = toBody > 20 && toBody < 4000;
+      // Zawsze czytelne w Grupie Lokalnej — wcześniej znikały za blisko / za daleko.
+      show = toBody > 8 && toBody < 800;
+    } else if (kind === "system") {
+      show = toBody > 2 && toBody < 120;
     } else if (kind === "comet") {
       show = toBody > 1.2 && toBody < 80;
     } else if (kind === "moon") {
@@ -82,7 +85,7 @@ export function BodyLabel({ id, name, kind }: BodyLabelProps) {
     }
 
     if (selectedId === id) {
-      show = toBody > 2.1;
+      show = kind === "galaxy" ? toBody > 6 : toBody > 1.4;
     }
 
     g.visible = show;
@@ -90,11 +93,15 @@ export function BodyLabel({ id, name, kind }: BodyLabelProps) {
   });
 
   const cls =
-    kind === "moon" || kind === "comet"
-      ? "helio-label helio-label-moon"
-      : kind === "dwarf" || kind === "galaxy"
-        ? "helio-label helio-label-dwarf"
-        : "helio-label";
+    kind === "galaxy"
+      ? "helio-label helio-label-galaxy"
+      : kind === "system"
+        ? "helio-label helio-label-system"
+        : kind === "moon" || kind === "comet"
+          ? "helio-label helio-label-moon"
+          : kind === "dwarf"
+            ? "helio-label helio-label-dwarf"
+            : "helio-label";
 
   return (
     <group ref={group} visible={false}>

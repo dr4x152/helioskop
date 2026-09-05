@@ -196,6 +196,54 @@ export function glowTexture(): CanvasTexture {
   });
 }
 
+/** Miękki krążek — kometa, meteory, pył (bez kwadratowych Points). */
+export function softDiscTexture(): CanvasTexture {
+  return getCached("softdisc", () => {
+    const s = 128;
+    const canvas = document.createElement("canvas");
+    canvas.width = s;
+    canvas.height = s;
+    const ctx = canvas.getContext("2d")!;
+    const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    g.addColorStop(0, "rgba(255,255,255,0.95)");
+    g.addColorStop(0.35, "rgba(230,240,255,0.45)");
+    g.addColorStop(1, "rgba(200,220,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, s, s);
+    return canvas;
+  });
+}
+
+/** Wstęga ogona: jasna przy jądrze, znika na końcu, miękkie boki. */
+export function cometTailTexture(): CanvasTexture {
+  return getCached("comettail", () => {
+    const w = 64;
+    const h = 256;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d")!;
+    const img = ctx.createImageData(w, h);
+    const d = img.data;
+    for (let y = 0; y < h; y += 1) {
+      const v = y / (h - 1);
+      const along = Math.pow(1 - v, 1.35);
+      for (let x = 0; x < w; x += 1) {
+        const u = (x / (w - 1)) * 2 - 1;
+        const side = Math.exp(-u * u * 5.2);
+        const a = along * side;
+        const i = (y * w + x) * 4;
+        d[i] = 220;
+        d[i + 1] = 235;
+        d[i + 2] = 255;
+        d[i + 3] = Math.round(a * 255);
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    return canvas;
+  });
+}
+
 /** Dysk spiralny do trybu „Kosmos lokalny”. */
 export function galaxyDiskTexture(id: string, hex: string): CanvasTexture {
   return getCached(`galaxy:${id}`, () => {
@@ -208,9 +256,9 @@ export function galaxyDiskTexture(id: string, hex: string): CanvasTexture {
     const cy = s / 2;
     ctx.clearRect(0, 0, s, s);
     const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, s / 2);
-    g.addColorStop(0, "rgba(255,240,210,0.95)");
-    g.addColorStop(0.2, hex);
-    g.addColorStop(0.55, "rgba(120,140,180,0.32)");
+    g.addColorStop(0, "rgba(255,248,230,1)");
+    g.addColorStop(0.18, hex);
+    g.addColorStop(0.48, "rgba(170,190,230,0.55)");
     g.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, s, s);

@@ -5,7 +5,22 @@
 
 export type EventSeverity = "toast" | "serious";
 
-export type EventVisual = "none" | "redgiant" | "whitedwarf" | "supernova" | "comet";
+export type EventVisual =
+  | "none"
+  | "redgiant"
+  | "whitedwarf"
+  | "supernova"
+  | "comet"
+  | "flare"
+  | "cme"
+  | "meteor"
+  | "aurora"
+  | "mars"
+  | "jupiter"
+  | "saturn"
+  | "sgr"
+  | "asteroid"
+  | "outburst";
 
 export interface TimelineEvent {
   id: string;

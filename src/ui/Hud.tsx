@@ -5,6 +5,7 @@ import { simClock } from "../lib/clock";
 import { useObservatory } from "../store/observatory";
 import { BodyPanel } from "./BodyPanel";
 import { EphemerisPanel } from "./EphemerisPanel";
+import { ActivityBar } from "./ActivityBar";
 import { EventToasts } from "./EventToasts";
 import { Header } from "./Header";
 import { PlanetChips } from "./PlanetChips";
@@ -88,6 +89,7 @@ export function Hud() {
       <div className="flex flex-col gap-3">
         <Header date={date} />
         <ScenarioBar />
+        <ActivityBar />
         <EventToasts />
         <EphemerisPanel date={date} />
         <BodyPanel date={date} />

@@ -4,6 +4,7 @@ import { Stars } from "@react-three/drei";
 import { ACESFilmicToneMapping, Color, type PointLight, SRGBColorSpace } from "three";
 import { BODIES } from "../data/bodies";
 import { COMETS } from "../data/comets";
+import { GALAXIES, PROXY_SYSTEMS } from "../data/galaxies";
 import { MOON_BY_ID } from "../data/moons";
 import { yearsFromToday } from "../lib/clock";
 import { sunPhase } from "../lib/solarPhase";
@@ -16,6 +17,7 @@ import { CelestialBody } from "./CelestialBody";
 import { CometBody } from "./CometBody";
 import { GalaxyField } from "./GalaxyField";
 import { OrbitLine } from "./OrbitLine";
+import { SceneFx } from "./SceneFx";
 import { SupernovaFlash } from "./SupernovaFlash";
 import { TimeTicker } from "./TimeTicker";
 
@@ -27,8 +29,7 @@ function Lights() {
     const { viewScale } = useObservatory.getState();
     const phase = sunPhase(yearsFromToday());
     if (sun.current) {
-      // W skali galaktycznej gasimy lampę Słońca — nie rozświetla billboardów.
-      sun.current.intensity = viewScale === "galaxy" ? 0.2 : phase.light;
+      sun.current.intensity = viewScale === "galaxy" ? 0.35 : phase.light;
       sun.current.color.set(phase.id === "whitedwarf" ? "#c8d6ff" : phase.id === "redgiant" ? "#ff7a30" : "#fff6e0");
     }
   });
@@ -85,6 +86,7 @@ function SolarSystem() {
         </>
       )}
       <SupernovaFlash />
+      <SceneFx />
     </group>
   );
 }
@@ -98,17 +100,23 @@ function SceneSwitch() {
     return (
       <group>
         <GalaxyField />
+        <SceneFx />
         {selectedId === "sgr-a" && <BlackHoleCloseup />}
         {showLabels && selectedId === "sgr-a" && (
           <BodyLabel id="sgr-a" name="Sgr A*" kind="galaxy" />
         )}
         {showLabels && selectedId !== "sgr-a" && (
           <>
-            <BodyLabel id="milkyway" name="Droga Mleczna" kind="galaxy" />
-            <BodyLabel id="andromeda" name="Andromeda" kind="galaxy" />
-            <BodyLabel id="triangulum" name="Trójkąt" kind="galaxy" />
+            {GALAXIES.map((g) => (
+              <BodyLabel key={g.id} id={g.id} name={g.name} kind="galaxy" />
+            ))}
             <BodyLabel id="sgr-a" name="Sgr A*" kind="galaxy" />
-            <BodyLabel id="solar-pin" name="Układ Słoneczny" kind="galaxy" />
+            {PROXY_SYSTEMS.filter((p) => {
+              if (selectedId === p.galaxyId || selectedId === p.id) return true;
+              return p.isHome && !selectedId;
+            }).map((p) => (
+              <BodyLabel key={p.id} id={p.id} name={p.name} kind="system" />
+            ))}
           </>
         )}
       </group>
@@ -153,7 +161,7 @@ export function ObservatoryCanvas() {
         factor={2.8}
         saturation={0.04}
         fade
-        speed={0}
+        speed={0.04}
       />
       <SceneSwitch />
       <CameraRig />

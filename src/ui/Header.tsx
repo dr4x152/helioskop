@@ -18,13 +18,13 @@ export function Header({ date }: HeaderProps) {
   const phase = sunPhase(years);
 
   let kicker = "Epoka UTC";
-  if (viewScale === "galaxy") kicker = "Kosmos lokalny · schemat";
+  if (viewScale === "galaxy") kicker = "Grupa Lokalna · schemat";
   else if (warping) kicker = "Przeskok · oś czasu";
   else if (Math.abs(years) >= 8_000) kicker = "Oś czasu · schemat";
   else if (atToday) kicker = "Teraz · UTC";
 
   let sub = `1 s = ${speed} d`;
-  if (viewScale === "galaxy") sub = "Droga Mleczna · M31 · M33 · Sgr A*";
+  if (viewScale === "galaxy") sub = "M31 · M33 · Droga Mleczna · układy wzorcowe";
   else if (warping) sub = "ciała jadą na nowe pozycje";
   else if (solarScenario) sub = `Ewolucja Słońca · ${phase.label}`;
   else if (atToday) sub = "pozycje z tej chwili";

@@ -15,8 +15,10 @@ export interface CometDef {
   meanLongitudeJ2000: number;
   meanMotionDegPerDay: number;
   color: string;
-  /** Długość ogona w jednostkach sceny. */
+  /** Bazowa długość ogona w jednostkach sceny (skalowana peryhelium). */
   tailLength: number;
+  /** Promień jądra — Encke ma być wyraźnie mniejszy. */
+  nucleus: number;
   fact: string;
   fictional?: boolean;
 }
@@ -33,7 +35,8 @@ export const COMETS: CometDef[] = [
     meanLongitudeJ2000: 112.0,
     meanMotionDegPerDay: 0.01309,
     color: "#cfe6ff",
-    tailLength: 7.2,
+    tailLength: 5.4,
+    nucleus: 0.07,
     fact: "Okres ~76 lat. Kolejne peryhelium: 2061. Orbita wsteczna.",
   },
   {
@@ -46,8 +49,9 @@ export const COMETS: CometDef[] = [
     inclinationDeg: 11.8,
     meanLongitudeJ2000: 186.0,
     meanMotionDegPerDay: 0.299,
-    color: "#e8d8b0",
-    tailLength: 3.4,
+    color: "#d8e6f4",
+    tailLength: 2.15,
+    nucleus: 0.05,
     fact: "Najkrótszy okres wśród komet okresowych (~3,3 roku).",
   },
   {
@@ -61,7 +65,8 @@ export const COMETS: CometDef[] = [
     meanLongitudeJ2000: 18,
     meanMotionDegPerDay: 0.00202,
     color: "#b8f0d8",
-    tailLength: 11,
+    tailLength: 8.2,
+    nucleus: 0.08,
     fact: "Kometa długookresowa — fikcyjna, na potrzeby obserwatorium.",
     fictional: true,
   },

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { BODY_BY_ID, kindLabel } from "../data/bodies";
 import { COMET_BY_ID } from "../data/comets";
-import { GALAXY_BY_ID, SGR_A } from "../data/galaxies";
+import { GALAXY_BY_ID, PROXY_BY_ID, SGR_A, systemsForGalaxy } from "../data/galaxies";
 import { MOON_BY_ID } from "../data/moons";
 import { yearsFromToday } from "../lib/clock";
 import { formatAu, formatDay, formatKm, formatPeriod } from "../lib/format";
@@ -95,9 +95,45 @@ export function BodyPanel({ date }: BodyPanelProps) {
 
   const galaxy = GALAXY_BY_ID[selectedId];
   if (galaxy) {
+    const systems = systemsForGalaxy(galaxy.id);
     return (
-      <Card kicker="Galaktyka · billboard" title={galaxy.name} subtitle={galaxy.nameLat} onClose={close}>
+      <Card kicker="Galaktyka · schemat" title={galaxy.name} subtitle={galaxy.nameLat} onClose={close}>
         <p className="mt-3 text-sm leading-snug text-pretty text-muted">{galaxy.fact}</p>
+        <p className="mt-2 text-[11px] leading-snug text-subtle">
+          Układy poniżej są wzorcami, nie pełną galaktyką.
+        </p>
+        <ul className="mt-2 space-y-1">
+          {systems.map((p) => (
+            <li key={p.id}>
+              <button
+                type="button"
+                onClick={() => select(p.id)}
+                className="font-mono text-[12px] text-accent hover:text-fg"
+              >
+                {p.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Card>
+    );
+  }
+
+  const proxy = PROXY_BY_ID[selectedId];
+  if (proxy) {
+    return (
+      <Card
+        kicker={proxy.isHome ? "Nasz układ" : "Układ wzorcowy · fikcja"}
+        title={proxy.name}
+        subtitle={proxy.nameLat}
+        onClose={close}
+      >
+        <p className="mt-3 text-sm leading-snug text-pretty text-muted">{proxy.fact}</p>
+        <ul className="mt-2 font-mono text-[11px] text-muted">
+          {proxy.planets.map((p) => (
+            <li key={p.name}>planeta {p.name}</li>
+          ))}
+        </ul>
       </Card>
     );
   }

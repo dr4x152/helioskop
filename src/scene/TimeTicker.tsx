@@ -1,14 +1,14 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { type TimelineEvent } from "../data/events";
+import { tickAmbient } from "../lib/ambientEngine";
 import { advanceSim, stepWarp, timeWarp, yearsFromToday } from "../lib/clock";
 import { collapseHits, scanTimeline } from "../lib/eventEngine";
 import { useObservatory } from "../store/observatory";
 
 /**
- * Zegar + skan wydarzeń.
- * W trakcie warpa zbieramy trafienia i pokazujemy je dopiero na końcu —
- * skok do „Karzeł” ma dać modal białego karła, nie supernowej z połowy drogi.
+ * Zegar + kamienie milowe + strumień ambient.
+ * Warp: eventy osi czasu na końcu. Ambient tylko gdy czas leci.
  */
 export function TimeTicker() {
   const prevYears = useRef(0);
@@ -41,6 +41,14 @@ export function TimeTicker() {
 
     if (store.started && !store.paused && !store.serious) {
       advanceSim(step, store.speed);
+      const amb = tickAmbient({
+        dt: step,
+        speed: store.speed,
+        mode: store.activityMode,
+        viewScale: store.viewScale,
+        allowSerious: !store.serious,
+      });
+      if (amb) store.ingestEvents([amb]);
     }
     const y = yearsFromToday();
     const hits = scanTimeline(prevYears.current, y);

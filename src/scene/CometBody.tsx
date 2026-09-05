@@ -2,19 +2,19 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import {
   AdditiveBlending,
-  BufferAttribute,
-  BufferGeometry,
   Color,
+  DoubleSide,
   type Group,
-  Line as ThreeLine,
-  LineBasicMaterial,
-  type Points,
+  type Mesh,
+  type Sprite,
   Vector3,
 } from "three";
 import { type CometDef } from "../data/comets";
 import { simClock } from "../lib/clock";
 import { keplerPosition } from "../lib/kepler";
+import { cometTailTexture, glowTexture, softDiscTexture } from "../lib/proceduralTextures";
 import { writePosition } from "../lib/positions";
+import { useObservatory } from "../store/observatory";
 
 interface CometBodyProps {
   def: CometDef;
@@ -22,71 +22,78 @@ interface CometBodyProps {
 }
 
 const _pos = new Vector3();
-const TAIL_LINE = 22;
-const TAIL_DUST = 28;
+const _away = new Vector3();
+const _up = new Vector3(0, 1, 0);
 
 /**
- * Kometa: jądro + ogon (linia jonowa + chmura pyłu).
- * Ogon zawsze „od Słońca” — wektor radialny od początku układu.
+ * Kometa: małe jądro + miękka koma + wstęga ogona przeciwsłoneczna.
+ * Bez kwadratowych Points — to psuło Encke (wyglądał jak chmura pikseli).
  */
 export function CometBody({ def, onPick }: CometBodyProps) {
   const group = useRef<Group>(null);
-  const dust = useRef<Points>(null);
+  const dust = useRef<Group>(null);
+  const tail = useRef<Mesh>(null);
+  const ion = useRef<Mesh>(null);
+  const coma = useRef<Sprite>(null);
   const color = useMemo(() => new Color(def.color), [def.color]);
-
-  // Geometrie mutowane w klatce — drei <Line> nie odświeża tablicy Vector3.
-  const lineGeom = useMemo(() => {
-    const g = new BufferGeometry();
-    g.setAttribute("position", new BufferAttribute(new Float32Array(TAIL_LINE * 3), 3));
-    return g;
-  }, []);
-  const dustGeom = useMemo(() => {
-    const g = new BufferGeometry();
-    g.setAttribute("position", new BufferAttribute(new Float32Array(TAIL_DUST * 3), 3));
-    return g;
-  }, []);
-  // `line` w JSX koliduje z SVG — budujemy THREE.Line ręcznie.
-  const ionTail = useMemo(
-    () =>
-      new ThreeLine(
-        lineGeom,
-        new LineBasicMaterial({ color: "#d8eeff", transparent: true, opacity: 0.72, depthWrite: false }),
-      ),
-    [lineGeom],
-  );
+  const tailMap = useMemo(() => cometTailTexture(), []);
+  const disc = useMemo(() => softDiscTexture(), []);
+  const glow = useMemo(() => glowTexture(), []);
 
   useFrame(() => {
     const g = group.current;
     if (!g) return;
-    keplerPosition(def, simClock.getDate(), _pos);
+    const state = keplerPosition(def, simClock.getDate(), _pos);
     g.position.copy(_pos);
     writePosition(def.id, g.position);
 
     const len = _pos.length() || 1;
-    const ax = _pos.x / len;
-    const ay = _pos.y / len;
-    const az = _pos.z / len;
+    _away.copy(_pos).multiplyScalar(1 / len);
 
-    const line = lineGeom.getAttribute("position") as BufferAttribute;
-    for (let i = 0; i < TAIL_LINE; i += 1) {
-      const t = i / (TAIL_LINE - 1);
-      const fade = t * def.tailLength;
-      line.setXYZ(i, ax * fade, ay * fade + Math.sin(t * 5) * 0.06, az * fade);
-    }
-    line.needsUpdate = true;
-    lineGeom.computeBoundingSphere();
+    // Bliżej Słońca ogon dłuższy i jaśniejszy; wybuch pyłu z silnika ambient.
+    const peri = def.au * (1 - def.eccentricity);
+    const near = Math.min(1.35, Math.max(0.28, (peri * 1.8) / Math.max(state.au, peri)));
+    const store = useObservatory.getState();
+    const burst = store.fx.cometBurstId === def.id ? 1.7 : 1;
+    const selected = store.selectedId === def.id ? 1.12 : 1;
+    const tailLen = def.tailLength * near * burst * selected;
+    const width = (def.nucleus * 4.2 + 0.14) * (0.7 + near * 0.5);
 
-    const pts = dustGeom.getAttribute("position") as BufferAttribute;
-    for (let i = 0; i < TAIL_DUST; i += 1) {
-      const t = (i + 0.35) / TAIL_DUST;
-      const fade = t * def.tailLength * 0.92;
-      const wobble = Math.sin(i * 1.7 + t * 8) * (0.12 + t * 0.35);
-      const side = Math.cos(i * 2.3) * (0.1 + t * 0.28);
-      pts.setXYZ(i, ax * fade + side, ay * fade + wobble, az * fade - side * 0.4);
+    if (tail.current) {
+      tail.current.quaternion.setFromUnitVectors(_up, _away);
+      tail.current.position.copy(_away).multiplyScalar(tailLen * 0.52);
+      tail.current.scale.set(width, tailLen, 1);
     }
-    pts.needsUpdate = true;
-    dustGeom.computeBoundingSphere();
+    if (ion.current) {
+      ion.current.quaternion.setFromUnitVectors(_up, _away);
+      ion.current.position.copy(_away).multiplyScalar(tailLen * 0.62);
+      ion.current.scale.set(width * 0.38, tailLen * 1.12, 1);
+    }
+    if (coma.current) {
+      const c = def.nucleus * (9 + near * 6) * burst;
+      coma.current.scale.set(c, c, 1);
+    }
+    if (dust.current) {
+      // Kilka miękkich krążków wzdłuż ogona — nie Points (kwadraty).
+      const children = dust.current.children;
+      for (let i = 0; i < children.length; i += 1) {
+        const spr = children[i] as Sprite;
+        const t = (i + 0.4) / children.length;
+        const fade = t * tailLen;
+        spr.position.set(
+          _away.x * fade,
+          _away.y * fade + Math.sin(i * 2.1 + t * 3) * width * 0.18,
+          _away.z * fade,
+        );
+        const s = width * (1.15 - t * 0.7);
+        spr.scale.set(s, s, 1);
+        const mat = spr.material;
+        mat.opacity = 0.22 * (1 - t) * (0.7 + near * 0.4);
+      }
+    }
   });
+
+  const dustCount = 7;
 
   return (
     <group ref={group}>
@@ -102,41 +109,70 @@ export function CometBody({ def, onPick }: CometBodyProps) {
           document.body.style.cursor = "auto";
         }}
       >
-        <sphereGeometry args={[0.12, 12, 10]} />
+        <sphereGeometry args={[def.nucleus, 14, 12]} />
         <meshBasicMaterial color={color} toneMapped={false} />
       </mesh>
-      {/* Większy hitbox — jądro jest małe. */}
       <mesh
         onClick={(e) => {
           e.stopPropagation();
           onPick(def.id);
         }}
       >
-        <sphereGeometry args={[0.55, 8, 6]} />
+        <sphereGeometry args={[Math.max(def.nucleus * 6, 0.35), 8, 6]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
-      <sprite scale={[0.85, 0.85, 1]}>
+      <sprite ref={coma} scale={[def.nucleus * 10, def.nucleus * 10, 1]}>
         <spriteMaterial
+          map={glow}
           color={color}
           transparent
-          opacity={0.6}
+          opacity={0.55}
           depthWrite={false}
           blending={AdditiveBlending}
           toneMapped={false}
         />
       </sprite>
-      <primitive object={ionTail} />
-      <points ref={dust} geometry={dustGeom}>
-        <pointsMaterial
+      <mesh ref={tail}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial
+          map={tailMap}
           color={def.color}
-          size={0.28}
           transparent
-          opacity={0.55}
-          sizeAttenuation
+          opacity={0.85}
           depthWrite={false}
           blending={AdditiveBlending}
+          side={DoubleSide}
+          toneMapped={false}
         />
-      </points>
+      </mesh>
+      <mesh ref={ion}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial
+          map={tailMap}
+          color="#cfe8ff"
+          transparent
+          opacity={0.45}
+          depthWrite={false}
+          blending={AdditiveBlending}
+          side={DoubleSide}
+          toneMapped={false}
+        />
+      </mesh>
+      <group ref={dust}>
+        {Array.from({ length: dustCount }, (_, i) => (
+          <sprite key={i}>
+            <spriteMaterial
+              map={disc}
+              color={def.color}
+              transparent
+              opacity={0.2}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              toneMapped={false}
+            />
+          </sprite>
+        ))}
+      </group>
     </group>
   );
 }

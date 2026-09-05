@@ -5,7 +5,17 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Vector3 } from "three";
 import { BODY_BY_ID } from "../data/bodies";
 import { COMET_BY_ID } from "../data/comets";
-import { BLACKHOLE_CAMERA, GALAXIES, GALAXY_CAMERA, SGR_A } from "../data/galaxies";
+import {
+  BLACKHOLE_CAMERA,
+  GALAXIES,
+  GALAXY_BY_ID,
+  LOCAL_GROUP_CAMERA,
+  LOCAL_GROUP_TARGET,
+  PROXY_BY_ID,
+  SGR_A,
+  galaxyFocusCamera,
+  proxyWorld,
+} from "../data/galaxies";
 import { MOON_BY_ID, MOONS_BY_PARENT } from "../data/moons";
 import { clampMinDistance, followDistance, OVERVIEW_CAMERA } from "../lib/kepler";
 import { readPosition } from "../lib/positions";
@@ -15,14 +25,16 @@ const _offset = new Vector3();
 const _prev = new Vector3();
 const _goalCam = new Vector3();
 const _goalTarget = new Vector3();
+const _shake = new Vector3();
 
-const GALAXY_IDS = new Set([...GALAXIES.map((g) => g.id), SGR_A.id, "solar-pin"]);
+const GALAXY_IDS = new Set([...GALAXIES.map((g) => g.id), SGR_A.id, "solar-pin", "solar-home"]);
 
 function focusDistance(id: string | null): number {
   if (!id) return 78;
-  if (id === SGR_A.id) return 22;
-  if (GALAXY_IDS.has(id)) return 420;
-  if (COMET_BY_ID[id]) return 8;
+  if (id === SGR_A.id) return 18;
+  if (PROXY_BY_ID[id]) return 14;
+  if (GALAXY_BY_ID[id]) return GALAXY_BY_ID[id].radius * 2.4;
+  if (COMET_BY_ID[id]) return 5.2;
   const moon = MOON_BY_ID[id];
   if (moon) return followDistance(moon.radius, moon.orbitRadius);
   const body = BODY_BY_ID[id];
@@ -36,13 +48,14 @@ function focusDistance(id: string | null): number {
 function bodyRadius(id: string | null): number {
   if (!id) return 2.55;
   if (id === SGR_A.id) return 3;
-  if (COMET_BY_ID[id]) return 0.2;
+  if (PROXY_BY_ID[id]) return 0.6;
+  if (COMET_BY_ID[id]) return 0.12;
   return MOON_BY_ID[id]?.radius ?? BODY_BY_ID[id]?.radius ?? 0.3;
 }
 
 /**
- * OrbitControls + śledzenie.
- * `viewScale` przełącza kadr: układ vs kosmos lokalny / Sgr A*.
+ * OrbitControls + śledzenie + kadr Grupy Lokalnej / wybranej galaktyki.
+ * Delikatny wstrząs przy poważnych FX (token shake).
  */
 export function CameraRig() {
   const controls = useRef<OrbitControlsImpl>(null);
@@ -54,6 +67,8 @@ export function CameraRig() {
   const flyT = useRef(0);
   const fromCam = useRef(new Vector3());
   const fromTarget = useRef(new Vector3());
+  const lastShake = useRef(0);
+  const shakeAge = useRef(99);
 
   const { camera } = useThree();
 
@@ -72,10 +87,24 @@ export function CameraRig() {
       if (id === SGR_A.id) {
         _goalCam.set(BLACKHOLE_CAMERA.x, BLACKHOLE_CAMERA.y, BLACKHOLE_CAMERA.z);
         _goalTarget.set(...SGR_A.position);
-      } else {
-        _goalCam.set(GALAXY_CAMERA.x, GALAXY_CAMERA.y, GALAXY_CAMERA.z);
-        _goalTarget.set(0, 0, 0);
+        return;
       }
+      const proxy = id ? PROXY_BY_ID[id] : undefined;
+      if (proxy) {
+        const w = proxyWorld(proxy);
+        _goalTarget.set(...w);
+        _goalCam.set(w[0] + 8, w[1] + 6, w[2] + 12);
+        return;
+      }
+      const g = id ? GALAXY_BY_ID[id] : undefined;
+      if (g) {
+        const { cam, target } = galaxyFocusCamera(g);
+        _goalCam.set(...cam);
+        _goalTarget.set(...target);
+        return;
+      }
+      _goalCam.set(LOCAL_GROUP_CAMERA.x, LOCAL_GROUP_CAMERA.y, LOCAL_GROUP_CAMERA.z);
+      _goalTarget.set(LOCAL_GROUP_TARGET.x, LOCAL_GROUP_TARGET.y, LOCAL_GROUP_TARGET.z);
       return;
     }
 
@@ -104,11 +133,18 @@ export function CameraRig() {
     const c = controls.current;
     if (!c) return;
 
-    c.minDistance = viewScale === "galaxy" ? 12 : clampMinDistance(bodyRadius(selectedId));
-    c.maxDistance = viewScale === "galaxy" ? 2800 : 220;
+    c.minDistance = viewScale === "galaxy" ? 6 : clampMinDistance(bodyRadius(selectedId));
+    c.maxDistance = viewScale === "galaxy" ? 900 : 220;
+
+    const shakeTok = useObservatory.getState().fx.shake;
+    if (shakeTok !== lastShake.current) {
+      lastShake.current = shakeTok;
+      if (shakeTok > 0) shakeAge.current = 0;
+    }
+    shakeAge.current += dt;
 
     if (flying.current) {
-      flyT.current = Math.min(1, flyT.current + dt / 0.9);
+      flyT.current = Math.min(1, flyT.current + dt / 0.95);
       const u = flyT.current;
       const ease = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
       camera.position.lerpVectors(fromCam.current, _goalCam, ease);
@@ -122,7 +158,7 @@ export function CameraRig() {
       return;
     }
 
-    if (viewScale === "system" && selectedId && follow && !GALAXY_IDS.has(selectedId)) {
+    if (viewScale === "system" && selectedId && follow && !GALAXY_IDS.has(selectedId) && !PROXY_BY_ID[selectedId]) {
       const p = readPosition(selectedId);
       if (p) {
         if (_prev.lengthSq() > 0) {
@@ -136,6 +172,14 @@ export function CameraRig() {
     } else {
       _prev.set(0, 0, 0);
     }
+
+    // Mikro-wstrząs — tani, tylko przy serious / asteroidzie.
+    if (shakeAge.current < 0.38) {
+      const k = (1 - shakeAge.current / 0.38) * 0.11;
+      _shake.set((Math.random() - 0.5) * k, (Math.random() - 0.5) * k, (Math.random() - 0.5) * k);
+      camera.position.add(_shake);
+      c.update();
+    }
   });
 
   return (
@@ -146,7 +190,7 @@ export function CameraRig() {
       enableDamping
       dampingFactor={0.08}
       minDistance={1.2}
-      maxDistance={2800}
+      maxDistance={900}
       maxPolarAngle={Math.PI * 0.92}
     />
   );

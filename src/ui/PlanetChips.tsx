@@ -1,6 +1,6 @@
 import { BODIES } from "../data/bodies";
 import { COMETS } from "../data/comets";
-import { GALAXIES, PROXY_BY_ID, SGR_A, systemsForGalaxy } from "../data/galaxies";
+import { GALAXIES, PROXY_BY_ID, PROXY_SYSTEMS, SGR_A, systemsForGalaxy } from "../data/galaxies";
 import { useObservatory } from "../store/observatory";
 
 function cx(...parts: Array<string | false | undefined>): string {
@@ -51,7 +51,8 @@ export function PlanetChips() {
         : selectedId
           ? PROXY_BY_ID[selectedId]?.galaxyId
           : undefined;
-    const systems = focused ? systemsForGalaxy(focused) : [];
+    // W przeglądzie pokazujemy wszystkie wzorce — inaczej „nie ma układów”.
+    const systems = focused ? systemsForGalaxy(focused) : PROXY_SYSTEMS;
 
     return (
       <nav
@@ -63,6 +64,11 @@ export function PlanetChips() {
           <Chip key={g.id} id={g.id} name={g.name} color={g.color} on={selectedId === g.id} onClick={select} />
         ))}
         <Chip id={SGR_A.id} name="Sgr A*" color="#ff9a4a" on={selectedId === SGR_A.id} onClick={select} />
+        {systems.length > 0 && (
+          <span className="self-center px-1 font-mono text-[10px] tracking-wider text-subtle uppercase">
+            Układy
+          </span>
+        )}
         {systems.map((p) => (
           <Chip
             key={p.id}

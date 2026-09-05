@@ -101,7 +101,7 @@ function ProxySystemMark({ sys, emphasized }: { sys: ProxySystem; emphasized: bo
     }
   });
 
-  const star = emphasized ? 2.4 : 1.35;
+  const star = emphasized ? 3.6 : 2.2;
 
   return (
     <group
@@ -119,7 +119,7 @@ function ProxySystemMark({ sys, emphasized }: { sys: ProxySystem; emphasized: bo
       }}
     >
       <mesh>
-        <sphereGeometry args={[emphasized ? 0.55 : 0.32, 12, 10]} />
+        <sphereGeometry args={[emphasized ? 0.85 : 0.5, 12, 10]} />
         <meshBasicMaterial color={sys.starColor} toneMapped={false} />
       </mesh>
       <sprite scale={[star, star, 1]}>
@@ -179,11 +179,11 @@ export function GalaxyField() {
       ? selectedId
       : PROXY_SYSTEMS.find((p) => p.id === selectedId)?.galaxyId;
 
-  const systems = PROXY_SYSTEMS.filter((p) => {
-    if (closeup) return false;
-    if (!focusedGalaxy) return p.isHome;
-    return p.galaxyId === focusedGalaxy;
-  });
+  // Przegląd: wszystkie pinezki (żeby „układy” były od razu widoczne).
+  // Zbliżenie: tylko układy wybranej galaktyki, większe.
+  const systems = closeup
+    ? []
+    : PROXY_SYSTEMS.filter((p) => !focusedGalaxy || p.galaxyId === focusedGalaxy);
 
   return (
     <group>
